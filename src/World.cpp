@@ -4,12 +4,15 @@
 #include <glm.hpp>
 #include <gtc\matrix_transform.hpp>
 #include "Utils.h"
+#include <iostream>
 
 using std::vector;
 using std::array;
 using std::unique_ptr;
 using std::make_shared;
 using std::make_unique;
+using std::string;
+using std::to_string;
 
 namespace bl{
 	World::World()
@@ -130,5 +133,36 @@ namespace bl{
 		const b2Vec2& centerB2 = bodyB2->GetLocalCenter();
 		return{ centerB2.x, centerB2.y };
 	}
+
+	void World::doStep(float stepMsec) {
+		float step = stepMsec / 1000.0f;
+		world.Step(step, VELOCITY_ITERATIONS, POSITION_ITERATIONS);
+	}
+
+	void World::applyLinearImpulse(uint32_t toObj, const Point& impulse) {
+		b2Body* bodyB2 = idToObject.at(toObj);
+		b2Vec2 impulseB2{ impulse.x, impulse.y };
+		bodyB2->ApplyLinearImpulse(impulseB2, bodyB2->GetWorldCenter(), true);
+	}
+
+	string World::objectToString(uint32_t id) {
+		auto lCoM = getLocalCoM(id);
+		auto gCoM = getGlobalCoM(id);
+		auto transform = getTransform(id);
+
+		b2Body* bodyB2 = idToObject.at(id);
+		auto mass = bodyB2->GetMass();
+		auto velocity = bodyB2->GetLinearVelocity();
+		
+		string res = "{lCoM: " + static_cast<string>(lCoM)
+			+"\ngCoM: " + static_cast<string>(gCoM)
+			+"\ntransform:\n" + Utils::toString(getTransform(id))
+			+ "\nmass: " + to_string(mass)
+			+ "\nvelocity: { x: " + to_string(velocity.x) + " y: " + to_string(velocity.y) + "}"
+			+ "}";
+		
+		return res;
+	}
+
 }
 

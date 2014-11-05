@@ -14,7 +14,7 @@ using namespace bl;
 
 int _tmain(int argc, _TCHAR* argv[]) {
 	bl::World world;
-	world.addObject(1, bl::DYNAMIC_OBJECT, { 30.0f, 30.0f }, 2.0f * M_PI / 3.0f);
+	world.addObject(1, bl::DYNAMIC_OBJECT, { 1.0f, 1.0f }, M_PI / 2.0f);
 
 	bl::VertexList poly{
 			{ 0.5f, -0.5f },
@@ -24,26 +24,24 @@ int _tmain(int argc, _TCHAR* argv[]) {
 	};
 	world.attachShape(1, poly);
 
-// 	bl::Point center { 0.0f, 0.0f };
-// 	world.attachShape(1, center, 2.0f);
-
+	world.addObject(2, bl::DYNAMIC_OBJECT, { 1.0f, 3.0f }, M_PI / 2.0f);
+	world.attachShape(2, poly);
 
 
 	bl::DebugShapeList shapes = world.getDebugShapes(1);
 	
 	bl::DebugPolygon shape = *(DebugPolygon*)(shapes[0].get());
 
-	auto lCoM = world.getLocalCoM(1);
-	auto gCoM = world.getGlobalCoM(1);
-	auto position = world.getPosition(1);
-	auto rotation = world.getRotation(1);
-	auto transform = world.getTransform(1);
+	std::cout << world.objectToString(1) << std::endl << std::endl;
 
-	std::cout << lCoM.x << " " << lCoM.y << std::endl;
-	std::cout << gCoM.x << " " << gCoM.y << std::endl;
-	std::cout << position.x << " " << position.y << std::endl;
-	std::cout << rotation << std::endl;
-	std::cout << Utils::toString(transform);
+	world.applyLinearImpulse(1, {0.0f, 1.0f});
+	
+	float stepMSec = 1000.0f / 60.0f;
+	world.doStep(500);
+	
+	world.doStep(500);
+	
+	world.doStep(500);
 
 	return 0;
 }

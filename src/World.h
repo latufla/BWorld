@@ -26,6 +26,9 @@ namespace bl{
 		void attachShape(uint32_t, const Point&, float);
 		void attachShape(uint32_t toObj, std::vector<Point>&);
 
+		void doStep(float);
+
+		void applyLinearImpulse(uint32_t, const Point&);
 
 		Point getPosition(uint32_t id);
 		float getRotation(uint32_t id);
@@ -35,11 +38,15 @@ namespace bl{
 		Point getGlobalCoM(uint32_t);
 		Point getLocalCoM(uint32_t);
 
+		std::string objectToString(uint32_t);
 
 		// slow, no proxy
 		DebugShapeList getDebugShapes(uint32_t);
-	
+		
 	private:
+		const uint32_t VELOCITY_ITERATIONS = 6;
+		const uint32_t POSITION_ITERATIONS = 2;
+
 		b2World world;
 		std::unordered_map<uint32_t, b2Body*> idToObject;
 

@@ -1,9 +1,14 @@
 #include <vector>
+#include <string>
 
 namespace bl{
 	struct Point {
 		float x;
 		float y;
+
+		operator std::string () const {
+			return "{ Point x: " + std::to_string(x) + " y: " + std::to_string(y) + " }";
+		}
 	};
 
 	struct DebugShape {};
