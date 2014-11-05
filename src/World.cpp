@@ -1,7 +1,12 @@
 #include "stdafx.h"
 #include "World.h"
 
+#include <glm.hpp>
+#include <gtc\matrix_transform.hpp>
+#include "Utils.h"
+
 using std::vector;
+using std::array;
 using std::unique_ptr;
 using std::make_shared;
 using std::make_unique;
@@ -11,27 +16,28 @@ namespace bl{
 		: world({ 0.0f, 0.0f }) {
 	}
 
-	bool World::addObject(uint32_t id, ObjectType tp, const Point& pos) {
-		b2BodyDef bodyDef;
-		bodyDef.type = static_cast<b2BodyType>(tp);
-		bodyDef.position.Set(pos.x, pos.y);
-		auto body = world.CreateBody(&bodyDef);
-		if (!body)
+	bool World::addObject(uint32_t id, ObjectType type, const Point& position, float rotationYRad) {
+		b2BodyDef bodyB2Def;
+		bodyB2Def.type = static_cast<b2BodyType>(type);
+		bodyB2Def.position.Set(position.x, position.y);
+		bodyB2Def.angle = rotationYRad;
+		b2Body* bodyB2 = world.CreateBody(&bodyB2Def);
+		if (!bodyB2)
 			return false;
 
-		auto res = idToObject.emplace(id, body);
+		auto res = idToObject.emplace(id, bodyB2);
 		return res.second;
 	}
 
 	void World::removeObject(uint32_t id) {
-		auto body = idToObject.at(id);
-		world.DestroyBody(body);
+		b2Body* bodyB2 = idToObject.at(id);
+		world.DestroyBody(bodyB2);
 
 		idToObject.erase(id);
 	}
 
 	void World::attachShape(uint32_t toObj, const Point& center, float radius) {
-		auto b = idToObject.at(toObj);
+		b2Body* bodyB2 = idToObject.at(toObj);
 
 		b2CircleShape shape;
 		shape.m_radius = radius;
@@ -39,11 +45,11 @@ namespace bl{
 
 		b2FixtureDef fixtureDef;
 		fixtureDef.shape = &shape;
-		b->CreateFixture(&fixtureDef);
+		bodyB2->CreateFixture(&fixtureDef);
 	}
 
 	void World::attachShape(uint32_t toObj, std::vector<Point>& vertices) {
-		b2Body* b = idToObject.at(toObj);
+		b2Body* bodyB2 = idToObject.at(toObj);
 		b2PolygonShape shape;
 
 		uint32_t vCount = vertices.size();
@@ -57,18 +63,39 @@ namespace bl{
 
 		b2FixtureDef fixtureDef;
 		fixtureDef.shape = &shape;
-		b->CreateFixture(&fixtureDef);
+		bodyB2->CreateFixture(&fixtureDef);
 	}
 
-	DebugShapeList World::getDebugShapes(uint32_t fromObj) {
-		b2Body* b = idToObject.at(fromObj);
+	Point World::getPosition(uint32_t id) {
+		b2Body* bodyB2 = idToObject.at(id);
+		const b2Vec2& posB2 = bodyB2->GetPosition();
+		return{ posB2.x, posB2.y };
+	}
 	
+	float World::getRotation(uint32_t id) {
+		b2Body* bodyB2 = idToObject.at(id);
+		return bodyB2->GetAngle();
+	}
+
+	array<float, 16> World::getTransform(uint32_t id) {
+		b2Body* bodyB2 = idToObject.at(id);
+		const b2Vec2& p = bodyB2->GetPosition();
+		glm::mat4 translation = glm::translate(glm::mat4{}, glm::vec3{ p.x, p.y, 0.0f });
+		glm::mat4 rotation = glm::rotate(glm::mat4{}, bodyB2->GetAngle(), glm::vec3{ 0.0f, 1.0f, 0.0f });
+		return Utils::toArray(translation * rotation);
+	}
+
+
+	//---
+	DebugShapeList World::getDebugShapes(uint32_t fromObj) {
+		b2Body* bodyB2 = idToObject.at(fromObj);
+
 		DebugShapeList res;
-		b2Fixture* fixture = b->GetFixtureList();
+		b2Fixture* fixture = bodyB2->GetFixtureList();
 		while (fixture) {
 			b2Shape* shapeB2 = fixture->GetShape();
 			b2Shape::Type shapeType = shapeB2->GetType();
-			if (shapeType == b2Shape::e_circle){
+			if (shapeType == b2Shape::e_circle) {
 				b2CircleShape* circleB2 = (b2CircleShape*)shapeB2;
 				b2Vec2& pos = circleB2->m_p;
 
@@ -76,10 +103,10 @@ namespace bl{
 				res.push_back(std::move(circle));
 			}
 			else if (shapeType == b2Shape::e_polygon) {
- 				b2PolygonShape* polyB2 = (b2PolygonShape*)shapeB2;
+				b2PolygonShape* polyB2 = (b2PolygonShape*)shapeB2;
 				vector<Point> vertices;
 				uint32_t vCount = polyB2->GetVertexCount();
-				for (char i = 0; i < vCount; i++) {
+				for (uint32_t i = 0; i < vCount; i++) {
 					const b2Vec2& bVx = polyB2->GetVertex(i);
 					vertices.push_back({ bVx.x, bVx.y });
 				}
@@ -90,6 +117,18 @@ namespace bl{
 			fixture = fixture->GetNext();
 		}
 		return res;
+	}
+
+	Point World::getGlobalCoM(uint32_t id) {
+		b2Body* bodyB2 = idToObject.at(id);
+		const b2Vec2& centerB2 = bodyB2->GetWorldCenter();
+		return {centerB2.x, centerB2.y};
+	}
+
+	Point World::getLocalCoM(uint32_t id) {
+		b2Body* bodyB2 = idToObject.at(id);
+		const b2Vec2& centerB2 = bodyB2->GetLocalCenter();
+		return{ centerB2.x, centerB2.y };
 	}
 }
 
