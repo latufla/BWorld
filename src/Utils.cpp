@@ -43,7 +43,6 @@ std::string Utils::toString(const std::array<float, 16>& a) {
 	return res;
 }
 
-
 std::array<float, 16> Utils::toArray(const mat4& m) {
 	array <float, 16> res;
 

@@ -8,6 +8,7 @@
 
 using std::vector;
 using std::array;
+using std::pair;
 using std::unique_ptr;
 using std::make_shared;
 using std::make_unique;
@@ -17,6 +18,27 @@ using std::to_string;
 namespace bl{
 	World::World()
 		: world({ 0.0f, 0.0f }) {
+		world.SetContactListener(&contactListener);
+	}
+
+	void World::doStep(float stepMsec) {
+		float step = stepMsec / 1000.0f;
+		world.Step(step, VELOCITY_ITERATIONS, POSITION_ITERATIONS);
+
+		doContactsStep();
+	}
+
+	void World::doContactsStep() {
+		contacts.clear();
+
+		auto& contactsB2 = contactListener.getContacts();
+		for (auto& i : contactsB2) {
+			uint32_t id1 = objectToId.at(i.first);
+			uint32_t id2 = objectToId.at(i.second);
+			pair<uint32_t, uint32_t> c{ id1, id2 };
+			contacts.push_back(c);
+		}
+		contactListener.clearFinishedContacts();
 	}
 
 	bool World::addObject(uint32_t id, ObjectType type, const Point& position, float rotationYRad) {
@@ -27,16 +49,18 @@ namespace bl{
 		b2Body* bodyB2 = world.CreateBody(&bodyB2Def);
 		if (!bodyB2)
 			return false;
-
-		auto res = idToObject.emplace(id, bodyB2);
-		return res.second;
+		
+		auto iToO = idToObject.emplace(id, bodyB2);
+		auto oToI = objectToId.emplace(bodyB2, id);
+		return iToO.second && oToI.second;
 	}
 
 	void World::removeObject(uint32_t id) {
 		b2Body* bodyB2 = idToObject.at(id);
-		world.DestroyBody(bodyB2);
-
 		idToObject.erase(id);
+		objectToId.erase(bodyB2);
+
+		world.DestroyBody(bodyB2);
 	}
 
 	void World::attachShape(uint32_t toObj, const Point& center, float radius) {
@@ -88,8 +112,59 @@ namespace bl{
 		return Utils::toArray(translation * rotation);
 	}
 
+	Point World::getGlobalCoM(uint32_t id) {
+		b2Body* bodyB2 = idToObject.at(id);
+		const b2Vec2& centerB2 = bodyB2->GetWorldCenter();
+		return {centerB2.x, centerB2.y};
+	}
 
-	//---
+	Point World::getLocalCoM(uint32_t id) {
+		b2Body* bodyB2 = idToObject.at(id);
+		const b2Vec2& centerB2 = bodyB2->GetLocalCenter();
+		return{ centerB2.x, centerB2.y };
+	}
+
+	void World::applyLinearImpulse(uint32_t toObj, const Point& impulse) {
+		b2Body* bodyB2 = idToObject.at(toObj);
+		b2Vec2 impulseB2{ impulse.x, impulse.y };
+		bodyB2->ApplyLinearImpulse(impulseB2, bodyB2->GetWorldCenter(), true);
+	}
+
+	vector<uint32_t> World::checkContacts(uint32_t id) {
+		vector<uint32_t> res;
+		for (auto& i : contacts) {
+			if (i.first == id)
+				res.push_back(i.second);
+			else if (i.second == id)
+				res.push_back(i.first);
+		}
+		return res;
+	}
+
+
+	string World::objectToString(uint32_t id) {
+		auto lCoM = getLocalCoM(id);
+		auto gCoM = getGlobalCoM(id);
+		auto transform = getTransform(id);
+
+		b2Body* bodyB2 = idToObject.at(id);
+		auto mass = bodyB2->GetMass();
+		auto velocity = bodyB2->GetLinearVelocity();
+
+		string res = "{lCoM: " + static_cast<string>(lCoM)
+			+"\ngCoM: " + static_cast<string>(gCoM)
+			+"\ntransform:\n" + Utils::toString(getTransform(id))
+			+ "\nmass: " + to_string(mass)
+			+ "\nvelocity: { x: " + to_string(velocity.x) + " y: " + to_string(velocity.y) + "}"
+			+ "\ncontacts: {";
+
+		for (auto& i : checkContacts(id)) {
+			res += " " + to_string(i);
+		}
+		res += "}}";
+		return res;
+	}
+
 	DebugShapeList World::getDebugShapes(uint32_t fromObj) {
 		b2Body* bodyB2 = idToObject.at(fromObj);
 
@@ -121,48 +196,5 @@ namespace bl{
 		}
 		return res;
 	}
-
-	Point World::getGlobalCoM(uint32_t id) {
-		b2Body* bodyB2 = idToObject.at(id);
-		const b2Vec2& centerB2 = bodyB2->GetWorldCenter();
-		return {centerB2.x, centerB2.y};
-	}
-
-	Point World::getLocalCoM(uint32_t id) {
-		b2Body* bodyB2 = idToObject.at(id);
-		const b2Vec2& centerB2 = bodyB2->GetLocalCenter();
-		return{ centerB2.x, centerB2.y };
-	}
-
-	void World::doStep(float stepMsec) {
-		float step = stepMsec / 1000.0f;
-		world.Step(step, VELOCITY_ITERATIONS, POSITION_ITERATIONS);
-	}
-
-	void World::applyLinearImpulse(uint32_t toObj, const Point& impulse) {
-		b2Body* bodyB2 = idToObject.at(toObj);
-		b2Vec2 impulseB2{ impulse.x, impulse.y };
-		bodyB2->ApplyLinearImpulse(impulseB2, bodyB2->GetWorldCenter(), true);
-	}
-
-	string World::objectToString(uint32_t id) {
-		auto lCoM = getLocalCoM(id);
-		auto gCoM = getGlobalCoM(id);
-		auto transform = getTransform(id);
-
-		b2Body* bodyB2 = idToObject.at(id);
-		auto mass = bodyB2->GetMass();
-		auto velocity = bodyB2->GetLinearVelocity();
-		
-		string res = "{lCoM: " + static_cast<string>(lCoM)
-			+"\ngCoM: " + static_cast<string>(gCoM)
-			+"\ntransform:\n" + Utils::toString(getTransform(id))
-			+ "\nmass: " + to_string(mass)
-			+ "\nvelocity: { x: " + to_string(velocity.x) + " y: " + to_string(velocity.y) + "}"
-			+ "}";
-		
-		return res;
-	}
-
 }
 

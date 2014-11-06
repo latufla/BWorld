@@ -4,6 +4,8 @@
 #include "geometry\Geometry.h"
 #include <memory>
 #include <array>
+#include "..\ContactListener.h"
+#include <utility>
 
 namespace bl{
 	enum ObjectType {
@@ -39,16 +41,24 @@ namespace bl{
 		Point getLocalCoM(uint32_t);
 
 		std::string objectToString(uint32_t);
+		
+		std::vector<uint32_t> checkContacts(uint32_t);
 
 		// slow, no proxy
 		DebugShapeList getDebugShapes(uint32_t);
 		
 	private:
+		void doContactsStep();
+
 		const uint32_t VELOCITY_ITERATIONS = 6;
 		const uint32_t POSITION_ITERATIONS = 2;
 
 		b2World world;
 		std::unordered_map<uint32_t, b2Body*> idToObject;
+		std::unordered_map<b2Body*, uint32_t> objectToId;
 
+		ContactListener contactListener;
+		std::vector < std::pair<uint32_t, uint32_t> > contacts;
+	
 	};
 }
