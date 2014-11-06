@@ -52,6 +52,7 @@ namespace bl{
 		
 		auto iToO = idToObject.emplace(id, bodyB2);
 		auto oToI = objectToId.emplace(bodyB2, id);
+
 		return iToO.second && oToI.second;
 	}
 
@@ -124,12 +125,80 @@ namespace bl{
 		return{ centerB2.x, centerB2.y };
 	}
 
+	void World::setDensity(uint32_t id, float val) {
+		if (val < 0)
+			throw std::exception("World::setDensity nonpositive density");
+		
+		b2Body* bodyB2 = idToObject.at(id);
+		b2Fixture* fixture = bodyB2->GetFixtureList();
+		if (!fixture)
+			throw std::exception("World::setDensity no shapes");
+		
+		while (fixture) {
+			fixture->SetDensity(val);
+			fixture = fixture->GetNext();
+		}
+	}
+
+	void World::setRestitution(uint32_t id, float val) {
+		if (val < 0)
+			throw std::exception("World::setRestitution nonpositive restitution");
+
+		b2Body* bodyB2 = idToObject.at(id);
+		b2Fixture* fixture = bodyB2->GetFixtureList();
+		if (!fixture)
+			throw std::exception("World::setRestitution no shapes");
+
+		while (fixture) {
+			fixture->SetRestitution(val);
+			fixture = fixture->GetNext();
+		}
+	}
+
+	void World::setFriction(uint32_t id, float val) {
+		if (val < 0)
+			throw std::exception("World::setFriction nonpositive friction"); 
+		
+		b2Body* bodyB2 = idToObject.at(id);
+		b2Fixture* fixture = bodyB2->GetFixtureList();
+		if (!fixture)
+			throw std::exception("World::setFriction no shapes"); 
+		
+		while (fixture) {
+			fixture->SetFriction(val);
+			fixture = fixture->GetNext();
+		}
+	}
+
+	void World::setLinearDamping(uint32_t id, float val) {
+		if (val < 1)
+			throw std::exception("World::setLinearDamping damping less 1");
+		
+		b2Body* bodyB2 = idToObject.at(id);
+		const b2Vec2& velocity = bodyB2->GetLinearVelocity();
+		bodyB2->SetLinearDamping((val - 1));
+	}
+
+	void World::setSensor(uint32_t id, bool isSensor) {
+		b2Body* bodyB2 = idToObject.at(id);
+		b2Fixture* fixture = bodyB2->GetFixtureList();
+		if (!fixture)
+			throw std::exception("World::setSensor no shapes");
+
+		while (fixture) {
+			fixture->SetSensor(isSensor);
+			fixture = fixture->GetNext();
+		}
+	}
+
+	
 	void World::applyLinearImpulse(uint32_t toObj, const Point& impulse) {
 		b2Body* bodyB2 = idToObject.at(toObj);
 		b2Vec2 impulseB2{ impulse.x, impulse.y };
 		bodyB2->ApplyLinearImpulse(impulseB2, bodyB2->GetWorldCenter(), true);
 	}
 
+	
 	vector<uint32_t> World::checkContacts(uint32_t id) {
 		vector<uint32_t> res;
 		for (auto& i : contacts) {
@@ -139,6 +208,24 @@ namespace bl{
 				res.push_back(i.first);
 		}
 		return res;
+	}
+
+	bool World::hasContact(uint32_t id, const Point& withPoint) {
+		b2Body* bodyB2 = idToObject.at(id);
+		b2Fixture* fixture = bodyB2->GetFixtureList();
+		if (!fixture)
+			throw std::exception("World::hasContact no shapes");
+
+		b2Vec2 pointB2{ withPoint.x, withPoint.y };
+		const b2Transform& transform = bodyB2->GetTransform();
+		while (fixture) {
+			b2Shape* shape = fixture->GetShape();
+			if (shape->TestPoint(transform, pointB2))
+				return true;
+
+			fixture = fixture->GetNext();
+		}
+		return false;
 	}
 
 

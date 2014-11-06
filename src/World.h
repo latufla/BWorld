@@ -30,7 +30,16 @@ namespace bl{
 
 		void doStep(float);
 
+		void setDensity(uint32_t, float);
+		void setRestitution(uint32_t, float);
+		// via objects, not via world and objects
+		void setFriction(uint32_t, float);
+		
+		void setSensor(uint32_t, bool);
+
 		void applyLinearImpulse(uint32_t, const Point&);
+		// ex: damping = 2.0f -> after 1 second velocity /= 2
+		void setLinearDamping(uint32_t, float);
 
 		Point getPosition(uint32_t id);
 		float getRotation(uint32_t id);
@@ -43,6 +52,7 @@ namespace bl{
 		std::string objectToString(uint32_t);
 		
 		std::vector<uint32_t> checkContacts(uint32_t);
+		bool hasContact(uint32_t, const Point&);
 
 		// slow, no proxy
 		DebugShapeList getDebugShapes(uint32_t);
@@ -52,7 +62,7 @@ namespace bl{
 
 		const uint32_t VELOCITY_ITERATIONS = 6;
 		const uint32_t POSITION_ITERATIONS = 2;
-
+		
 		b2World world;
 		std::unordered_map<uint32_t, b2Body*> idToObject;
 		std::unordered_map<b2Body*, uint32_t> objectToId;
