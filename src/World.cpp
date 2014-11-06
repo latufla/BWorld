@@ -21,15 +21,15 @@ namespace bl{
 		world.SetContactListener(&contactListener);
 	}
 
-	void World::doStep(float stepMsec) {
-		float step = stepMsec / 1000.0f;
-		world.Step(step, VELOCITY_ITERATIONS, POSITION_ITERATIONS);
+	void World::doStep(float stepSec) {
+		world.Step(stepSec, VELOCITY_ITERATIONS, POSITION_ITERATIONS);
 
 		doContactsStep();
 	}
 
 	void World::doContactsStep() {
 		contacts.clear();
+		contactListener.clearFinishedContacts();
 
 		auto& contactsB2 = contactListener.getContacts();
 		for (auto& i : contactsB2) {
@@ -38,7 +38,6 @@ namespace bl{
 			pair<uint32_t, uint32_t> c{ id1, id2 };
 			contacts.push_back(c);
 		}
-		contactListener.clearFinishedContacts();
 	}
 
 	bool World::addObject(uint32_t id, ObjectType type, const Point& position, float rotationYRad) {
@@ -175,7 +174,6 @@ namespace bl{
 			throw std::exception("World::setLinearDamping damping less 1");
 		
 		b2Body* bodyB2 = idToObject.at(id);
-		const b2Vec2& velocity = bodyB2->GetLinearVelocity();
 		bodyB2->SetLinearDamping((val - 1));
 	}
 
@@ -238,18 +236,19 @@ namespace bl{
 		auto mass = bodyB2->GetMass();
 		auto velocity = bodyB2->GetLinearVelocity();
 
-		string res = "{lCoM: " + static_cast<string>(lCoM)
+ 		string res = 
+			"{lCoM: " + static_cast<string>(lCoM)
 			+"\ngCoM: " + static_cast<string>(gCoM)
 			+"\ntransform:\n" + Utils::toString(getTransform(id))
 			+ "\nmass: " + to_string(mass)
-			+ "\nvelocity: { x: " + to_string(velocity.x) + " y: " + to_string(velocity.y) + "}"
-			+ "\ncontacts: {";
-
+ 			+ "\nvelocity: { x: " + to_string(velocity.x) + " y: " + to_string(velocity.y) + "}"
+ 			+ "\ncontacts: {";
 		for (auto& i : checkContacts(id)) {
 			res += " " + to_string(i);
 		}
+
 		res += "}}";
-		return res;
+ 		return res;
 	}
 
 	DebugShapeList World::getDebugShapes(uint32_t fromObj) {
