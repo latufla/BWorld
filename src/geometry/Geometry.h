@@ -1,7 +1,8 @@
+#pragma once
 #include <vector>
 #include <string>
 
-namespace bl{
+namespace bw{
 	struct Point {
 		float x;
 		float y;

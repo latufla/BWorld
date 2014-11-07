@@ -1,8 +1,6 @@
 #include "stdafx.h"
 #include "World.h"
 
-#include <glm.hpp>
-#include <gtc\matrix_transform.hpp>
 #include "Utils.h"
 #include <iostream>
 
@@ -15,7 +13,7 @@ using std::make_unique;
 using std::string;
 using std::to_string;
 
-namespace bl{
+namespace bw{
 	World::World()
 		: world({ 0.0f, 0.0f }) {
 		world.SetContactListener(&contactListener);
@@ -106,10 +104,13 @@ namespace bl{
 
 	array<float, 16> World::getTransform(uint32_t id) {
 		b2Body* bodyB2 = idToObject.at(id);
-		const b2Vec2& p = bodyB2->GetPosition();
-		glm::mat4 translation = glm::translate(glm::mat4{}, glm::vec3{ p.x, p.y, 0.0f });
-		glm::mat4 rotation = glm::rotate(glm::mat4{}, bodyB2->GetAngle(), glm::vec3{ 0.0f, 1.0f, 0.0f });
-		return Utils::toArray(translation * rotation);
+		array<float, 16> res = {
+			1, 0, 0, 0,
+			0, 1, 0, 0,
+			0, 0, 1, 0,
+			0, 0, 0, 1
+		};
+		return Utils::fromBox2d(bodyB2->GetTransform(), res);
 	}
 
 	Point World::getGlobalCoM(uint32_t id) {

@@ -4,10 +4,10 @@
 #include "geometry\Geometry.h"
 #include <memory>
 #include <array>
-#include "..\ContactListener.h"
+#include "ContactListener.h"
 #include <utility>
 
-namespace bl{
+namespace bw{
 	enum ObjectType {
 		STATIC_OBJECT = 0,
 		KINEMATIC_OBJECT,

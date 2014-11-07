@@ -10,13 +10,13 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
-using namespace bl;
+using namespace bw;
 
 int _tmain(int argc, _TCHAR* argv[]) {
-	bl::World world;
-	world.addObject(1, bl::DYNAMIC_OBJECT, { 1.0f, 1.0f }, (float)M_PI / 2.0f);
+	bw::World world;
+	world.addObject(1, bw::DYNAMIC_OBJECT, { 1.0f, 1.0f }, (float)M_PI / 2.0f);
 
-	bl::VertexList poly{
+	bw::VertexList poly{
 			{ 1.0f, -1.0f },
 			{ 1.0f, 1.0f },
 			{ -1.0f, 1.0f },
@@ -26,8 +26,8 @@ int _tmain(int argc, _TCHAR* argv[]) {
 	world.setRestitution(1, 1.0f);
 
 
-	world.addObject(2, bl::DYNAMIC_OBJECT, { 1.0f, 2.3f }, (float)M_PI / 2.0f);
-	bl::VertexList poly2{
+	world.addObject(2, bw::DYNAMIC_OBJECT, { 1.0f, 3.1f }, (float)M_PI / 2.0f);
+	bw::VertexList poly2{
 			{ .1f, -.1f },
 			{ .1f, .1f },
 			{ -.1f, .1f },
@@ -36,7 +36,7 @@ int _tmain(int argc, _TCHAR* argv[]) {
 	world.attachShape(2, poly2);
 	world.setRestitution(2, 1.0f);
 		
-	world.applyLinearImpulse(1, { 0.0f, 10.0f });
+	world.applyLinearImpulse(1, { 0.0f, 60.0f });
 
 	float stepSec = 1.0f / 60.0f;
 

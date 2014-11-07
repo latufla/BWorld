@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "ContactListener.h"
 
-namespace bl {
+namespace bw {
 	ContactListener::ContactListener() {
 	}
 
