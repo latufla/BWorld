@@ -1,6 +1,5 @@
 #pragma once
 #include <array>
-#include "geometry\Geometry.h"
 #include <Box2D\Common\b2Math.h>
 
 namespace bw {

@@ -1,15 +1,10 @@
 #include "stdafx.h"
 #include "World.h"
-
 #include "Utils.h"
-#include <iostream>
 
 using std::vector;
 using std::array;
 using std::pair;
-using std::unique_ptr;
-using std::make_shared;
-using std::make_unique;
 using std::string;
 using std::to_string;
 
@@ -19,8 +14,8 @@ namespace bw{
 		world.SetContactListener(&contactListener);
 	}
 
-	void World::doStep(float stepSec) {
-		world.Step(stepSec, VELOCITY_ITERATIONS, POSITION_ITERATIONS);
+	void World::doStep(float stepMSec) {
+		world.Step(stepMSec / 1000.0f, VELOCITY_ITERATIONS, POSITION_ITERATIONS);
 
 		doContactsStep();
 	}
@@ -46,7 +41,7 @@ namespace bw{
 		b2Body* bodyB2 = world.CreateBody(&bodyB2Def);
 		if (!bodyB2)
 			return false;
-		
+
 		auto iToO = idToObject.emplace(id, bodyB2);
 		auto oToI = objectToId.emplace(bodyB2, id);
 
@@ -96,7 +91,7 @@ namespace bw{
 		const b2Vec2& posB2 = bodyB2->GetPosition();
 		return{ posB2.x, posB2.y };
 	}
-	
+
 	float World::getRotation(uint32_t id) {
 		b2Body* bodyB2 = idToObject.at(id);
 		return bodyB2->GetAngle();
@@ -115,25 +110,27 @@ namespace bw{
 
 	Point World::getGlobalCoM(uint32_t id) {
 		b2Body* bodyB2 = idToObject.at(id);
-		const b2Vec2& centerB2 = bodyB2->GetWorldCenter();
-		return {centerB2.x, centerB2.y};
+		const b2Vec2& comB2 = bodyB2->GetWorldCenter();
+		Point com = { comB2.x, comB2.y };
+		return com;
 	}
 
 	Point World::getLocalCoM(uint32_t id) {
 		b2Body* bodyB2 = idToObject.at(id);
-		const b2Vec2& centerB2 = bodyB2->GetLocalCenter();
-		return{ centerB2.x, centerB2.y };
+		const b2Vec2& comB2 = bodyB2->GetLocalCenter();
+		Point com = { comB2.x, comB2.y };
+		return com;
 	}
 
 	void World::setDensity(uint32_t id, float val) {
 		if (val < 0)
 			throw std::exception("World::setDensity nonpositive density");
-		
+
 		b2Body* bodyB2 = idToObject.at(id);
 		b2Fixture* fixture = bodyB2->GetFixtureList();
 		if (!fixture)
 			throw std::exception("World::setDensity no shapes");
-		
+
 		while (fixture) {
 			fixture->SetDensity(val);
 			fixture = fixture->GetNext();
@@ -157,13 +154,13 @@ namespace bw{
 
 	void World::setFriction(uint32_t id, float val) {
 		if (val < 0)
-			throw std::exception("World::setFriction nonpositive friction"); 
-		
+			throw std::exception("World::setFriction nonpositive friction");
+
 		b2Body* bodyB2 = idToObject.at(id);
 		b2Fixture* fixture = bodyB2->GetFixtureList();
 		if (!fixture)
-			throw std::exception("World::setFriction no shapes"); 
-		
+			throw std::exception("World::setFriction no shapes");
+
 		while (fixture) {
 			fixture->SetFriction(val);
 			fixture = fixture->GetNext();
@@ -173,7 +170,7 @@ namespace bw{
 	void World::setLinearDamping(uint32_t id, float val) {
 		if (val < 1)
 			throw std::exception("World::setLinearDamping damping less 1");
-		
+
 		b2Body* bodyB2 = idToObject.at(id);
 		bodyB2->SetLinearDamping((val - 1));
 	}
@@ -190,14 +187,14 @@ namespace bw{
 		}
 	}
 
-	
+
 	void World::applyLinearImpulse(uint32_t toObj, const Point& impulse) {
 		b2Body* bodyB2 = idToObject.at(toObj);
 		b2Vec2 impulseB2{ impulse.x, impulse.y };
 		bodyB2->ApplyLinearImpulse(impulseB2, bodyB2->GetWorldCenter(), true);
 	}
 
-	
+
 	vector<uint32_t> World::checkContacts(uint32_t id) {
 		vector<uint32_t> res;
 		for (auto& i : contacts) {
@@ -237,51 +234,72 @@ namespace bw{
 		auto mass = bodyB2->GetMass();
 		auto velocity = bodyB2->GetLinearVelocity();
 
- 		string res = 
+		string res =
 			"{lCoM: " + static_cast<string>(lCoM)
 			+"\ngCoM: " + static_cast<string>(gCoM)
 			+"\ntransform:\n" + Utils::toString(getTransform(id))
 			+ "\nmass: " + to_string(mass)
- 			+ "\nvelocity: { x: " + to_string(velocity.x) + " y: " + to_string(velocity.y) + "}"
- 			+ "\ncontacts: {";
+			+ "\nvelocity: { x: " + to_string(velocity.x) + " y: " + to_string(velocity.y) + "}"
+			+ "\ncontacts: {";
 		for (auto& i : checkContacts(id)) {
 			res += " " + to_string(i);
 		}
 
 		res += "}}";
- 		return res;
+		return res;
 	}
 
-	DebugShapeList World::getDebugShapes(uint32_t fromObj) {
+	// DEBUG
+	vector<VertexList> World::getDebugLocalShapes(uint32_t fromObj) {
 		b2Body* bodyB2 = idToObject.at(fromObj);
-
-		DebugShapeList res;
+		vector<VertexList> res;
+		const double delta = 2.0f * M_PI / DEBUG_CIRCLE_SHAPE_STEPS;
 		b2Fixture* fixture = bodyB2->GetFixtureList();
 		while (fixture) {
 			b2Shape* shapeB2 = fixture->GetShape();
 			b2Shape::Type shapeType = shapeB2->GetType();
-			if (shapeType == b2Shape::e_circle) {
-				b2CircleShape* circleB2 = (b2CircleShape*)shapeB2;
-				b2Vec2& pos = circleB2->m_p;
-
-				auto circle = make_unique<DebugCircle>(Point{ pos.x, pos.y }, circleB2->m_radius);
-				res.push_back(std::move(circle));
+			VertexList vertices;
+			switch (shapeType) {
+			case b2Shape::e_circle:
+				vertices = createDebugCircle((b2CircleShape*)shapeB2, (float)delta);
+				break;
+			case b2Shape::e_polygon:
+				vertices = createDebugPolygon((b2PolygonShape*)shapeB2);
+				break;
+			default: // do nothing
+				;
 			}
-			else if (shapeType == b2Shape::e_polygon) {
-				b2PolygonShape* polyB2 = (b2PolygonShape*)shapeB2;
-				vector<Point> vertices;
-				uint32_t vCount = polyB2->GetVertexCount();
-				for (uint32_t i = 0; i < vCount; i++) {
-					const b2Vec2& bVx = polyB2->GetVertex(i);
-					vertices.push_back({ bVx.x, bVx.y });
-				}
 
-				auto poly = make_unique<DebugPolygon>(vertices);
-				res.push_back(std::move(poly));
-			}
+			res.push_back(vertices);
 			fixture = fixture->GetNext();
 		}
 		return res;
 	}
+
+	VertexList World::createDebugCircle(b2CircleShape* shape, float delta) {
+		VertexList res;
+		const b2Vec2& posB2 = shape->m_p;
+		float radiusB2 = shape->m_radius;
+		for (uint32_t i = 0; i < DEBUG_CIRCLE_SHAPE_STEPS; ++i) {
+			Point v{
+				posB2.x + (radiusB2 * cos(i * delta)),
+				posB2.y + (radiusB2 * sin(i * delta))
+			};
+			res.push_back(v);
+		}
+		return res;
+	}
+
+	VertexList World::createDebugPolygon(b2PolygonShape* shape) {
+		VertexList res;
+		uint32_t vCount = shape->GetVertexCount();
+		for (uint32_t i = 0; i < vCount; ++i) {
+			const b2Vec2& vB2 = shape->GetVertex(i);
+			Point v{ vB2.x, vB2.y };
+			res.push_back(v);
+		}
+		return res;
+	}
+	// END DEBUG
 }
 
