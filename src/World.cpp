@@ -1,4 +1,4 @@
-#include "stdafx.h"
+#include "SharedHeaders.h"
 #include "World.h"
 #include "Utils.h"
 #include "exceptions\Exception.h"

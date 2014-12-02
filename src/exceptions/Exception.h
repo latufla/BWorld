@@ -1,6 +1,6 @@
 #pragma once
 #include <memory>
-#include "../../stdafx.h"
+#include "../SharedHeaders.h"
 
 #define EXCEPTION_INFO __FUNCTION__,__LINE__
 

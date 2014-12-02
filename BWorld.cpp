@@ -1,12 +1,12 @@
 // BLWorld.cpp : Defines the entry point for the console application.
 //
 
-#include "stdafx.h"
-#include "src\World.h"
+#include "src/SharedHeaders.h"
+#include "src/World.h"
 #include <vector>
 #include <iostream>
-#include "src\Utils.h"
-#include "src\exceptions\Exception.h"
+#include "src/Utils.h"
+#include "src/exceptions/Exception.h"
 
 
 void run();
