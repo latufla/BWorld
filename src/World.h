@@ -29,39 +29,39 @@ namespace bw{
 		World();
 		~World() = default;
 
-		bool addObject(uint32_t, ObjectType, const Point&, float = 0.0f);
-		void removeObject(uint32_t);
+		bool addObject(uint32_t id, ObjectType type, const Point& pos, float rotationYRad = 0.0f);
+		void removeObject(uint32_t id);
 
-		void attachShape(uint32_t, const Point&, float);
+		void attachShape(uint32_t toObj, const Point& center, float radius);
 		void attachShape(uint32_t toObj, std::vector<Point>&);
 
-		void doStep(float); // mSec
+		void doStep(float stepSec);
 
-		void setDensity(uint32_t, float);
-		void setRestitution(uint32_t, float);
-		void setFriction(uint32_t, float); // via objects, not via world and objects
+		void setDensity(uint32_t id, float val);
+		void setRestitution(uint32_t id, float val);
+		void setFriction(uint32_t id, float val); // via objects, not via world and objects
 		
-		void setSensor(uint32_t, bool);
+		void setSensor(uint32_t id, bool isSensor);
 
-		void applyLinearImpulse(uint32_t, const Point&);
-		void setLinearDamping(uint32_t, float); // ex: damping = 2.0f -> after 1 second velocity /= 2
+		void applyLinearImpulse(uint32_t id, const Point& val);
+		void setLinearDamping(uint32_t id, float val); // ex: damping = 2.0f -> after 1 second velocity /= 2
 		
 		Point getPosition(uint32_t id);
 		float getRotation(uint32_t id);
 
-		std::array<float, 16> getTransform(uint32_t); // renderer oriented
+		std::array<float, 16> getTransform(uint32_t id); // renderer oriented
 				
-		Point getGlobalCoM(uint32_t);
-		Point getLocalCoM(uint32_t);
+		Point getGlobalCoM(uint32_t id);
+		Point getLocalCoM(uint32_t id);
 
-		std::string objectToString(uint32_t);
+		std::string objectToString(uint32_t id);
 		
-		std::vector<uint32_t> checkContacts(uint32_t);
-		bool hasContact(uint32_t, const Point&);
+		std::vector<uint32_t> checkContacts(uint32_t id);
+		bool hasContact(uint32_t id, const Point& withPoint);
 
 		// renderer oriented
 		// in object coordinates -> once get, then apply transform
-		std::vector<VertexList> getDebugLocalShapes(uint32_t); 
+		std::vector<VertexList> getDebugLocalShapes(uint32_t id); 
 	
 	private:
 		void doContactsStep();

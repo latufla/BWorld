@@ -8,8 +8,8 @@ namespace bw {
 		ContactListener();
 		~ContactListener();
 
-		void BeginContact(b2Contact* contact);
-		void EndContact(b2Contact* contact);
+		void BeginContact(b2Contact*);
+		void EndContact(b2Contact*);
 
 		// all contacts, even finished, but uncleared
 		std::vector<std::pair<b2Body*, b2Body*>>& getContacts() { return contacts; }

@@ -8,8 +8,8 @@ namespace bw {
 		Utils() = delete;
 		~Utils() = delete;
 
-		static std::string Utils::toString(const std::array<float, 16>&);
-		static std::array<float, 16>& Utils::fromBox2d(const b2Transform&, std::array<float, 16>&);
+		static std::string Utils::toString(const std::array<float, 16>& from);
+		static std::array<float, 16>& Utils::fromBox2d(const b2Transform& from, std::array<float, 16>& outColumnOrderTo);
 	};
 }
 

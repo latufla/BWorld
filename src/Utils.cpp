@@ -7,11 +7,11 @@ using std::string;
 using std::to_string;
 
 namespace bw{
-	std::string Utils::toString(const std::array<float, 16>& a) {
+	std::string Utils::toString(const std::array<float, 16>& from) {
 		string res = "{";
 		for (int i = 0; i < 4; ++i) {
 			for (int j = 0; j < 4; ++j) {
-				res += to_string(a.at(i + j * 4)) + " ";
+				res += to_string(from.at(i + j * 4)) + " ";
 			}
 			if (i != 3)
 				res += "\n ";
